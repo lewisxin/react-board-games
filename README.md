@@ -8,4 +8,4 @@ This is a board game web app extended from [Facebook React Tutorial](https://rea
     - npm start [dev]
     - npm run build [prod]
 
-> Current Branch: gomoku
+> Current Branch: tic-tac-toe
