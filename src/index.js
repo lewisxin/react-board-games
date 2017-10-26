@@ -46,10 +46,10 @@ class Board extends React.Component {
 class Game extends React.Component {
     constructor(props) {
         super(props);
-        const size = 5;
+        const size = 3;
         this.state = {
             history: [{
-                squares: Array(Math.pow(size,2)).fill(null),
+                squares: Array(Math.pow(size, 2)).fill(null),
                 location: {
                     id: null,
                     row: null,
@@ -135,6 +135,7 @@ class Game extends React.Component {
             status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
         }
 
+        console.log(result && result.blocks)
         return (
             <div className="game">
                 <div className="game-board">
@@ -168,6 +169,13 @@ class Game extends React.Component {
     }
 }
 
+window.winningTypes = {
+    DIAGONAL: 'diagonal',
+    INV_DIAGONAL: 'invDiagonal',
+    VERTICAL: 'vertical',
+    HORIZONTAL: 'horizontal'
+};
+
 function calculateWinner(squares) {
     let currentLocation;
     // let prevLocation = null;
@@ -185,26 +193,27 @@ function calculateWinner(squares) {
             currentLocation = calculateLocation(index, squares);
             // vertical
             vertical[currentLocation.col - 1][squares[index]]++;
-            winner = checkWhoWins(vertical[currentLocation.col - 1], size);
+            winner = checkWhoWins(vertical[currentLocation.col - 1], size, window.winningTypes.VERTICAL, currentLocation);
 
             // horizontal
             horizontal[currentLocation.row - 1][squares[index]]++;
-            if (!winner) winner = checkWhoWins(horizontal[currentLocation.row - 1], size);
+            if (!winner) winner = checkWhoWins(horizontal[currentLocation.row - 1], size, window.winningTypes.HORIZONTAL, currentLocation);
 
             // diagonal
             if (currentLocation.row === currentLocation.col) {
                 diagonal[squares[index]]++;
-                if (!winner) winner = checkWhoWins(diagonal, size);
+                if (!winner) winner = checkWhoWins(diagonal, size, window.winningTypes.DIAGONAL);
             }
             // inverse diagonal
             if (currentLocation.row === (size + 1 - currentLocation.col)) {
                 invDiagonal[squares[index]]++;
-                if (!winner) winner = checkWhoWins(invDiagonal, size);
+                if (!winner) winner = checkWhoWins(invDiagonal, size, window.winningTypes.INV_DIAGONAL);
             }
 
             if (winner) {
                 result = {
-                    winner: winner,
+                    winner: winner.winner,
+                    blocks: winner.blocks
                 };
                 return;
             }
@@ -243,13 +252,34 @@ function calculateLocation(i, squares) {
     }
 }
 
-function checkWhoWins(count, size) {
+function checkWhoWins(count, size, type, location) {
     if (count['X'] === size) {
-        return 'X'
+        return {
+            winner: 'X',
+            blocks: calculateWinningBlocks(size, type, location)
+        }
     } else if (count['O'] === size) {
-        return 'O'
+        return {
+            winner: 'O',
+            blocks: calculateWinningBlocks(size, type, location)
+        }
     } else {
         return null
+    }
+}
+
+function calculateWinningBlocks(size, type, location) {
+    const winningTypes = window.winningTypes;
+    switch (type) {
+        case winningTypes.DIAGONAL:
+            return [...Array(size).keys()].map(v => v * size + v);
+        case winningTypes.INV_DIAGONAL:
+            return [...Array(size).keys()].map(v => (v + 1) * (size - 1));
+        case winningTypes.HORIZONTAL:
+            return [...Array(size).keys()].map(v => v + (location.row - 1) * size);
+        case winningTypes.VERTICAL:
+            console.log(location.col)
+            return [...Array(size).keys()].map(v => v * size + (location.col - 1));
     }
 }
 
