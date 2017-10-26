@@ -163,7 +163,7 @@ class Game extends React.Component {
         // construct stats info
         let status;
 
-        if (winner) {
+        if (winner && winner.winner) {
             status = this.renderGameInfo('Winner: ', winner.winner)
         } else if (this.state.draw) {
             status = 'Draw!!'
