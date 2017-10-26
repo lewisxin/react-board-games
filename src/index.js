@@ -1,11 +1,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
+import 'font-awesome/css/font-awesome.min.css';
 
 function Square(props) {
+    let className;
+    if (props.value === 'X') {
+        className = 'fa fa-circle bg-white';
+    } else if (props.value === 'O') {
+        className = 'fa fa-circle-thin bg-white';
+    }
     return (
         <button className={props.class} onClick={props.onClick}>
-            {props.value}
+            <i className={className}>{}</i>
         </button>
     );
 }
@@ -102,6 +109,18 @@ class Game extends React.Component {
         })
     }
 
+    renderNextPlayerColor() {
+        if (this.state.xIsNext) {
+            return (
+                <span className="text-lg">{'Next Player: '}<i className="fa fa-circle bg-white">{}</i></span>
+            )
+        } else {
+            return (
+                <span className="text-lg">{'Next Player: '}<i className="fa fa-circle-thin bg-white">{}</i></span>
+            )
+        }
+    }
+
     render() {
         const history = this.state.history;
         const current = history[this.state.stepNumber];
@@ -132,7 +151,7 @@ class Game extends React.Component {
         } else if (result && result.draw) {
             status = 'Draw!!'
         } else {
-            status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+            status = this.renderNextPlayerColor();
         }
 
         console.log(result && result.blocks)
