@@ -19,7 +19,7 @@ ol, ul {
 
 .square {
     background: #fff;
-    border: 1px solid #999;
+    border: 0;
     float: left;
     font-size: 24px;
     font-weight: bold;
@@ -28,8 +28,10 @@ ol, ul {
     margin-top: -1px;
     padding: 0;
     text-align: center;
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(to bottom, transparent 49%, black 50%, black 51%, transparent 51%),
+    linear-gradient(to right, transparent 49%, black 50%, black 51%, transparent 51%);
 }
 
 .square:focus {
@@ -111,9 +113,9 @@ ol, ul {
 }
 
 /*.moves button:focus {*/
-    /*outline: 0;*/
-    /*background-color: rgb(79, 110, 255);*/
-    /*font-weight: bolder;*/
+/*outline: 0;*/
+/*background-color: rgb(79, 110, 255);*/
+/*font-weight: bolder;*/
 /*}*/
 
 button.selected {
@@ -122,4 +124,12 @@ button.selected {
 
 .winning-block {
     color: red;
+}
+
+.bg-white {
+    background: white !important;
+}
+
+.text-lg {
+    font-size: large;
 }
