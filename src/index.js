@@ -53,7 +53,7 @@ class Board extends React.Component {
 class Game extends React.Component {
     constructor(props) {
         super(props);
-        const size = 15;
+        const size = 5;
         this.state = {
             history: [{
                 squares: Array(Math.pow(size, 2)).fill(null),
@@ -66,6 +66,9 @@ class Game extends React.Component {
             stepNumber: 0,
             xIsNext: true,
             movesDesc: true,
+            winners: [null],
+            draw: false,
+            blocks: []
         }
     }
 
@@ -73,17 +76,27 @@ class Game extends React.Component {
         const history = this.state.history.slice(0, this.state.stepNumber + 1);
         const current = history[history.length - 1];
         const squares = current.squares.slice();
+        const winners = this.state.winners.slice(0, this.state.stepNumber + 1);
+        const winner = winners[winners.length - 1];
+        const draw = this.state.draw;
 
-        if (calculateWinner(squares) || squares[i]) {
+        // if the game already has a winner or the game is draw or square is already filled, no change to game board
+        if (winner || squares[i] || draw) {
             return;
         }
+
+        // else check if user will win after the move
         squares[i] = this.state.xIsNext ? 'X' : 'O';
+        const calculatedWinner = calculateWinner(squares, i);
         this.setState({
             history: history.concat([{
                 squares: squares,
                 location: calculateLocation(i, squares)
             }]),
+            winners: winners.concat(calculatedWinner && calculatedWinner.winner),
+            blocks: (calculatedWinner && calculatedWinner.blocks) || [],
             stepNumber: history.length,
+            draw: !!(calculatedWinner && calculatedWinner.draw),
             xIsNext: !this.state.xIsNext,
         });
     }
@@ -99,6 +112,8 @@ class Game extends React.Component {
             stepNumber: 0,
             history: this.state.history.slice(0, 1),
             xIsNext: true,
+            winners: [null],
+            draw: false,
         })
     }
 
@@ -109,14 +124,14 @@ class Game extends React.Component {
         })
     }
 
-    renderNextPlayerColor() {
-        if (this.state.xIsNext) {
+    renderGameInfo(text, val) {
+        if (val === 'X') {
             return (
-                <span className="text-lg">{'Next Player: '}<i className="fa fa-circle bg-white">{}</i></span>
+                <span className="text-lg">{text}<i className="fa fa-circle bg-white">{}</i></span>
             )
         } else {
             return (
-                <span className="text-lg">{'Next Player: '}<i className="fa fa-circle-thin bg-white">{}</i></span>
+                <span className="text-lg">{text}<i className="fa fa-circle-thin bg-white">{}</i></span>
             )
         }
     }
@@ -124,7 +139,7 @@ class Game extends React.Component {
     render() {
         const history = this.state.history;
         const current = history[this.state.stepNumber];
-        const result = calculateWinner(current.squares);
+        const winner = this.state.winners[this.state.stepNumber];
 
         // calculate moves
         // Array.props.map((value, index) => {})
@@ -146,12 +161,12 @@ class Game extends React.Component {
 
         let status;
 
-        if (result && result.winner) {
-            status = 'Winner: ' + result.winner;
-        } else if (result && result.draw) {
+        if (winner) {
+            status = this.renderGameInfo('Winner: ', winner)
+        } else if (this.state.draw) {
             status = 'Draw!!'
         } else {
-            status = this.renderNextPlayerColor();
+            status = this.renderGameInfo('Next Player: ', this.state.xIsNext ? 'X' : 'O')
         }
 
         return (
@@ -164,7 +179,7 @@ class Game extends React.Component {
                     </div>
                     <Board
                         squares={current.squares}
-                        winningBlocks={result && result.blocks}
+                        winningBlocks={winner && winner.blocks}
                         onClick={(i) => this.handleClick(i)}
                     />
                 </div>
@@ -187,52 +202,60 @@ class Game extends React.Component {
     }
 }
 
-function calculateWinner(squares) {
-    let currentLocation;
+function calculateWinner(squares, i) {
     // let prevLocation = null;
     // let locations = [];
     let size = Math.sqrt(squares.length);
-    let diagonal = {'X': 0, 'O': 0,},
-        invDiagonal = {'X': 0, 'O': 0},
-        vertical = Array(size).fill().map(() => Object({'X': 0, 'O': 0})),
-        horizontal = Array(size).fill().map(() => Object({'X': 0, 'O': 0}));
+    const WINNING_SIZE = 5;
+    const currentLocation = calculateLocation(i, squares);
 
-    let result = {}, winner;
-
-    squares.forEach((square, index) => {
-        if (squares[index]) {
-            currentLocation = calculateLocation(index, squares);
-            // vertical
-            vertical[currentLocation.col - 1][squares[index]]++;
-            winner = checkWhoWins(vertical[currentLocation.col - 1], size);
-
-            // horizontal
-            horizontal[currentLocation.row - 1][squares[index]]++;
-            if (!winner) winner = checkWhoWins(horizontal[currentLocation.row - 1], size);
-
-            // diagonal
-            if (currentLocation.row === currentLocation.col) {
-                diagonal[squares[index]]++;
-                if (!winner) winner = checkWhoWins(diagonal, size);
-            }
-            // inverse diagonal
-            if (currentLocation.row === (size + 1 - currentLocation.col)) {
-                invDiagonal[squares[index]]++;
-                if (!winner) winner = checkWhoWins(invDiagonal, size);
-            }
-
-            if (winner) {
-                result = {
-                    winner: winner,
-                };
-                return;
-            }
-
+    let map = {
+        vertical: {
+            count: 0,
+            valid: [true, true],
+        },
+        horizontal: {
+            count: 0,
+            valid: [true, true],
+        },
+        diagonal: {
+            count: 0,
+            valid: [true, true],
+        },
+        invDiagonal: {
+            count: 0,
+            valid: [true, true],
         }
-    });
+    };
 
-    if (result && result.winner) {
-        return result
+    let row = currentLocation.row, col = currentLocation.col;
+    for (let j = 1; j < WINNING_SIZE; j++) {
+        // find index of neighbors
+        let north = (row - j > 0) ? calculateIndex(row - j, col, size) : undefined;
+        let south = (row + j < size) ? calculateIndex(row + j, col, size) : undefined;
+        let east = (col + j < size) ? calculateIndex(row, col + j, size) : undefined;
+        let west = (col - j > 0) ? calculateIndex(row, col - j, size) : undefined;
+        let northeast = (row - j > 0 && col + j < size) ? calculateIndex(row - j, col + j, size) : undefined;
+        let southwest = (row + j < size && col - j > 0) ? calculateIndex(row + j, col - j, size) : undefined;
+        let northwest = (row - j > 0 && col - j > 0) ? calculateIndex(row - j, col - j, size) : undefined;
+        let southeast = (row + j < size && col + j < size) ? calculateIndex(row + j, col + j, size) : undefined;
+
+        registerCountOnDirection(squares[north], squares[south], squares[i], map.vertical);
+        registerCountOnDirection(squares[east], squares[west], squares[i], map.horizontal);
+        registerCountOnDirection(squares[northeast], squares[southwest], squares[i], map.invDiagonal);
+        registerCountOnDirection(squares[northwest], squares[southeast], squares[i], map.diagonal);
+    }
+
+    let result = {};
+    for (let key in map) {
+        if (map[key].count === WINNING_SIZE - 1) {
+            result.winner = squares[i];
+            break;
+        }
+    }
+
+    if (result.winner) {
+        return result;
     }
 
     let numEmptySquare = 0;
@@ -251,6 +274,20 @@ function calculateWinner(squares) {
     return null;
 }
 
+function registerCountOnDirection(direction1Val, direction2Val, currVal, register) {
+    // console.log(direction1Val, direction2Val, currVal, type, register.valid[0], register.valid[1]);
+    if (currVal && direction1Val && (direction1Val === currVal) && register.valid[0]) {
+        register.count++
+    } else {
+        register.valid[0] = false;
+    }
+    if (currVal && direction2Val && (direction2Val === currVal) && register.valid[1]) {
+        register.count++
+    } else {
+        register.valid[1] = false;
+    }
+}
+
 function calculateLocation(i, squares) {
     let size = Math.sqrt(squares.length);
     let row = Math.ceil((i + 1) / size);
@@ -262,17 +299,10 @@ function calculateLocation(i, squares) {
     }
 }
 
-function checkWhoWins(count, size) {
-    if (count['X'] === size) {
-        return 'X'
-    } else if (count['O'] === size) {
-        return 'O'
-    } else {
-        return null
-    }
+function calculateIndex(row, col, size, startWith = 0) {
+    return startWith + (row - 1) * size + (col - 1);
 }
 
-// ========================================
 
 ReactDOM.render(
     <Game/>,
