@@ -53,7 +53,7 @@ class Board extends React.Component {
 class Game extends React.Component {
     constructor(props) {
         super(props);
-        const size = 5;
+        const size = 15;
         this.state = {
             history: [{
                 squares: Array(Math.pow(size, 2)).fill(null),
@@ -68,7 +68,6 @@ class Game extends React.Component {
             movesDesc: true,
             winners: [null],
             draw: false,
-            blocks: []
         }
     }
 
@@ -81,7 +80,7 @@ class Game extends React.Component {
         const draw = this.state.draw;
 
         // if the game already has a winner or the game is draw or square is already filled, no change to game board
-        if (winner || squares[i] || draw) {
+        if (winner && winner.winner || squares[i] || draw) {
             return;
         }
 
@@ -93,8 +92,10 @@ class Game extends React.Component {
                 squares: squares,
                 location: calculateLocation(i, squares)
             }]),
-            winners: winners.concat(calculatedWinner && calculatedWinner.winner),
-            blocks: (calculatedWinner && calculatedWinner.blocks) || [],
+            winners: winners.concat({
+                winner: calculatedWinner && calculatedWinner.winner,
+                blocks: calculatedWinner && calculatedWinner.blocks || []
+            }),
             stepNumber: history.length,
             draw: !!(calculatedWinner && calculatedWinner.draw),
             xIsNext: !this.state.xIsNext,
@@ -159,16 +160,18 @@ class Game extends React.Component {
             return this.state.movesDesc ? a.key - b.key : b.key - a.key
         });
 
+        // construct stats info
         let status;
 
         if (winner) {
-            status = this.renderGameInfo('Winner: ', winner)
+            status = this.renderGameInfo('Winner: ', winner.winner)
         } else if (this.state.draw) {
             status = 'Draw!!'
         } else {
             status = this.renderGameInfo('Next Player: ', this.state.xIsNext ? 'X' : 'O')
         }
 
+        // render component
         return (
             <div className="game">
                 <div className="game-board">
@@ -213,18 +216,22 @@ function calculateWinner(squares, i) {
         vertical: {
             count: 0,
             valid: [true, true],
+            blocks: [i]
         },
         horizontal: {
             count: 0,
             valid: [true, true],
+            blocks: [i]
         },
         diagonal: {
             count: 0,
             valid: [true, true],
+            blocks: [i]
         },
         invDiagonal: {
             count: 0,
             valid: [true, true],
+            blocks: [i]
         }
     };
 
@@ -240,16 +247,17 @@ function calculateWinner(squares, i) {
         let northwest = (row - j > 0 && col - j > 0) ? calculateIndex(row - j, col - j, size) : undefined;
         let southeast = (row + j < size && col + j < size) ? calculateIndex(row + j, col + j, size) : undefined;
 
-        registerCountOnDirection(squares[north], squares[south], squares[i], map.vertical);
-        registerCountOnDirection(squares[east], squares[west], squares[i], map.horizontal);
-        registerCountOnDirection(squares[northeast], squares[southwest], squares[i], map.invDiagonal);
-        registerCountOnDirection(squares[northwest], squares[southeast], squares[i], map.diagonal);
+        registerCountOnDirection(north, south, i, squares, map.vertical);
+        registerCountOnDirection(east, west, i, squares, map.horizontal);
+        registerCountOnDirection(northeast, southwest, i, squares, map.invDiagonal);
+        registerCountOnDirection(northwest, southeast, i, squares, map.diagonal);
     }
 
     let result = {};
     for (let key in map) {
         if (map[key].count === WINNING_SIZE - 1) {
             result.winner = squares[i];
+            result.blocks = map[key].blocks;
             break;
         }
     }
@@ -274,15 +282,17 @@ function calculateWinner(squares, i) {
     return null;
 }
 
-function registerCountOnDirection(direction1Val, direction2Val, currVal, register) {
+function registerCountOnDirection(direction1, direction2, curr, squares, register) {
     // console.log(direction1Val, direction2Val, currVal, type, register.valid[0], register.valid[1]);
-    if (currVal && direction1Val && (direction1Val === currVal) && register.valid[0]) {
-        register.count++
+    if (squares[curr] && squares[direction1] && (squares[direction1] === squares[curr]) && register.valid[0]) {
+        register.count++;
+        register.blocks.push(direction1);
     } else {
         register.valid[0] = false;
     }
-    if (currVal && direction2Val && (direction2Val === currVal) && register.valid[1]) {
-        register.count++
+    if (squares[curr] && squares[direction2] && (squares[direction2] === squares[curr]) && register.valid[1]) {
+        register.count++;
+        register.blocks.push(direction2);
     } else {
         register.valid[1] = false;
     }

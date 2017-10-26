@@ -123,7 +123,9 @@ button.selected {
 }
 
 .winning-block {
-    color: red;
+    /*color: red;*/
+    animation: flasher 1s ease;
+    animation-iteration-count: 3;
 }
 
 .bg-white {
@@ -132,4 +134,15 @@ button.selected {
 
 .text-lg {
     font-size: large;
+}
+
+.flash {
+    animation: flasher 2s ease;
+}
+
+@keyframes flasher {
+    50% {
+        opacity : 0.3;
+        border-color: #dc4469;
+    }
 }
