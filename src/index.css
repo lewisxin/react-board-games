@@ -30,8 +30,8 @@ ol, ul {
     text-align: center;
     width: 40px;
     height: 40px;
-    background: linear-gradient(to bottom, transparent 49%, black 50%, black 51%, transparent 51%),
-    linear-gradient(to right, transparent 49%, black 50%, black 51%, transparent 51%);
+    background: linear-gradient(to bottom, transparent 49%, black 5%, black 51%, transparent 51%),
+    linear-gradient(to right, transparent 49%, black 5%, black 51%, transparent 51%);
 }
 
 .square:focus {
